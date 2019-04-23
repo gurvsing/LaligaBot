@@ -1,0 +1,12 @@
+D:\home\site\wwwroot\bin\Release\netcoreapp2.0\luis-csharp-bot-test-hazem.bot
+D:\home\site\wwwroot\bin\Release\netcoreapp2.0\BasicBot.deps.json
+D:\home\site\wwwroot\bin\Release\netcoreapp2.0\BasicBot.runtimeconfig.json
+D:\home\site\wwwroot\bin\Release\netcoreapp2.0\BasicBot.runtimeconfig.dev.json
+D:\home\site\wwwroot\bin\Release\netcoreapp2.0\BasicBot.dll
+D:\home\site\wwwroot\bin\Release\netcoreapp2.0\BasicBot.pdb
+D:\home\site\wwwroot\obj\Release\netcoreapp2.0\BasicBot.csprojAssemblyReference.cache
+D:\home\site\wwwroot\obj\Release\netcoreapp2.0\BasicBot.csproj.CoreCompileInputs.cache
+D:\home\site\wwwroot\obj\Release\netcoreapp2.0\BasicBot.AssemblyInfoInputs.cache
+D:\home\site\wwwroot\obj\Release\netcoreapp2.0\BasicBot.AssemblyInfo.cs
+D:\home\site\wwwroot\obj\Release\netcoreapp2.0\BasicBot.dll
+D:\home\site\wwwroot\obj\Release\netcoreapp2.0\BasicBot.pdb

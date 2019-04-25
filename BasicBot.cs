@@ -245,7 +245,7 @@ namespace Microsoft.BotBuilderSamples
             var qnaResult = await this.qnAServiceHelper.QueryQnAService(query, qnaState);
             var qnaAnswer = qnaResult[0].Answer;
 
-            if (qnaAnswer == "No good match found in KB.")
+            if (string.Equals(qnaAnswer, "No good match found in KB.", StringComparison.OrdinalIgnoreCase))
             {
                 qnaAnswer = "I didn't understand what you just said to me.";
             }

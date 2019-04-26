@@ -86,12 +86,12 @@ namespace Microsoft.BotBuilderSamples
 
             // Create a dialog context
             var dc = await Dialogs.CreateContextAsync(turnContext);
-
+            
             if (activity.Type == ActivityTypes.Message)
             {
                 // Perform a call to LUIS to retrieve results for the current activity message.
-                var luisResults = await _services.LuisServices[LuisConfiguration].RecognizeAsync(dc.Context, cancellationToken);
-                var luisResults2 = await luisServiceV3.PredictLUIS(turnContext.Activity.Text);
+                //var luisResults = await _services.LuisServices[LuisConfiguration].RecognizeAsync(dc.Context, cancellationToken);
+                var luisResults2 = await luisServiceV3.PredictLUIS(turnContext.Activity.Text, dc.Context);
 
                 //// If any entities were updated, treat as interruption.
                 //// For example, "no my name is tony" will manifest as an update of the name to be "tony".
@@ -126,7 +126,7 @@ namespace Microsoft.BotBuilderSamples
                             switch (topIntent)
                             {
                                 case PurchaseTicket:
-                                    await turnContext.SendActivityAsync("Purchase Ticket Intent detected. Check results ---> \n"+  luisResults2.Response);
+                                    await turnContext.SendActivityAsync(LaLigaBL.PurchaseTicket(luisResults2));
                                     break;
 
                                 case StatisticsIntent:

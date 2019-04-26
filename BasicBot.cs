@@ -37,10 +37,12 @@ namespace Microsoft.BotBuilderSamples
 
         private readonly IStatePropertyAccessor<GreetingState> _greetingStateAccessor;
         private readonly IStatePropertyAccessor<DialogState> _dialogStateAccessor;
+        private readonly IStatePropertyAccessor<QnABotState> _qnaStateAccessor;
         private readonly UserState _userState;
         private readonly ConversationState _conversationState;
         private readonly BotServices _services;
         private readonly LuisServiceV3 luisServiceV3;
+        private readonly QnAServiceHelper qnAServiceHelper;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BasicBot"/> class.
@@ -53,6 +55,7 @@ namespace Microsoft.BotBuilderSamples
             _userState = userState ?? throw new ArgumentNullException(nameof(userState));
             _conversationState = conversationState ?? throw new ArgumentNullException(nameof(conversationState));
 
+            _qnaStateAccessor = _userState.CreateProperty<QnABotState>(nameof(QnABotState));
             _greetingStateAccessor = _userState.CreateProperty<GreetingState>(nameof(GreetingState));
             _dialogStateAccessor = _conversationState.CreateProperty<DialogState>(nameof(DialogState));
 
@@ -63,6 +66,7 @@ namespace Microsoft.BotBuilderSamples
             }
 
             luisServiceV3 = new LuisServiceV3();
+            qnAServiceHelper = new QnAServiceHelper();
 
             Dialogs = new DialogSet(_dialogStateAccessor);
             Dialogs.Add(new GreetingDialog(_greetingStateAccessor, loggerFactory));
@@ -82,7 +86,7 @@ namespace Microsoft.BotBuilderSamples
 
             // Create a dialog context
             var dc = await Dialogs.CreateContextAsync(turnContext);
-            
+
             if (activity.Type == ActivityTypes.Message)
             {
                 // Perform a call to LUIS to retrieve results for the current activity message.
@@ -135,9 +139,8 @@ namespace Microsoft.BotBuilderSamples
 
                                 case NoneIntent:
                                 default:
-                                    // Help or no intent identified, either way, let's provide some help.
-                                    // to the user
-                                    await dc.Context.SendActivityAsync("I didn't understand what you just said to me.");
+                                    var qnaResponse = await this.GetQnAResponse(activity.Text, turnContext);
+                                    await turnContext.SendActivityAsync(qnaResponse);
                                     break;
                             }
 
@@ -231,6 +234,40 @@ namespace Microsoft.BotBuilderSamples
                 ContentType = "application/vnd.microsoft.card.adaptive",
                 Content = JsonConvert.DeserializeObject(adaptiveCard),
             };
+        }
+
+        private async Task<Activity> GetQnAResponse(string query, ITurnContext turnContext)
+        {
+            Activity outputActivity = null;
+            var newState = new QnABotState();
+
+            var qnaState = await _qnaStateAccessor.GetAsync(turnContext, () => new QnABotState());
+            var qnaResult = await this.qnAServiceHelper.QueryQnAService(query, qnaState);
+            var qnaAnswer = qnaResult[0].Answer;
+
+            if (string.Equals(qnaAnswer, "No good match found in KB.", StringComparison.OrdinalIgnoreCase))
+            {
+                qnaAnswer = "I didn't understand what you just said to me.";
+            }
+
+            var prompts = qnaResult[0].Context?.Prompts;
+
+            if (prompts == null || prompts.Length < 1)
+            {
+                outputActivity = MessageFactory.Text(qnaAnswer);
+            }
+            else
+            {
+                // Set bot state only if prompts are found in QnA result
+                newState.PreviousQnaId = qnaResult[0].Id;
+                newState.PreviousUserQuery = query;
+
+                outputActivity = CardHelper.GetHeroCard(qnaAnswer, prompts);
+            }
+
+            await _qnaStateAccessor.SetAsync(turnContext, newState);
+
+            return outputActivity;
         }
 
         /// <summary>

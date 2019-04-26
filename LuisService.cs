@@ -61,8 +61,11 @@ namespace BasicBot
         {
             var entities = new Dictionary<string, string>();
             foreach (var item in entitiesObject.Children())
-            { 
-                entities.Add(item.Name, item.Value.First.First.Value);
+            {
+                if (item.Value?.First?.HasValues)
+                {
+                    entities.Add(item.Name, item.Value.First.First.Value);
+                }
             }
 
             return entities;

@@ -43,6 +43,7 @@ namespace Microsoft.BotBuilderSamples
         private readonly BotServices _services;
         private readonly LuisServiceV3 luisServiceV3;
         private readonly QnAServiceHelper qnAServiceHelper;
+        private static bool InQnaMaker { get; set; } = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BasicBot"/> class.
@@ -86,6 +87,13 @@ namespace Microsoft.BotBuilderSamples
 
             // Create a dialog context
             var dc = await Dialogs.CreateContextAsync(turnContext);
+
+            if (InQnaMaker)
+            {
+                var qnaResponse = await this.GetQnAResponse(activity.Text, turnContext);
+                await turnContext.SendActivityAsync(qnaResponse);
+                return;
+            }
             
             if (activity.Type == ActivityTypes.Message)
             {
@@ -141,6 +149,7 @@ namespace Microsoft.BotBuilderSamples
                                 default:
                                     var qnaResponse = await this.GetQnAResponse(activity.Text, turnContext);
                                     await turnContext.SendActivityAsync(qnaResponse);
+                                    InQnaMaker = true;
                                     break;
                             }
 
@@ -255,6 +264,7 @@ namespace Microsoft.BotBuilderSamples
             if (prompts == null || prompts.Length < 1)
             {
                 outputActivity = MessageFactory.Text(qnaAnswer);
+                InQnaMaker = false;
             }
             else
             {

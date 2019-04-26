@@ -1,7 +1,7 @@
 {
   "runtimeTarget": {
     "name": ".NETCoreApp,Version=v2.0",
-    "signature": "4ad5de654e4e7ee91306e04451e7b051014d74ac"
+    "signature": "be9b4d6a40201dd9bac17148e9c0865d4a68a94b"
   },
   "compilationOptions": {
     "defines": [
@@ -30,6 +30,7 @@
           "Microsoft.Azure.CognitiveServices.Language": "1.0.1-preview",
           "Microsoft.Bot.Builder": "4.1.5",
           "Microsoft.Bot.Builder.AI.Luis": "4.1.5",
+          "Microsoft.Bot.Builder.AI.QnA": "4.1.5",
           "Microsoft.Bot.Builder.Azure": "4.1.5",
           "Microsoft.Bot.Builder.Dialogs": "4.1.5",
           "Microsoft.Bot.Builder.Integration.AspNet.Core": "4.1.5",
@@ -1788,6 +1789,22 @@
         },
         "compile": {
           "lib/netstandard2.0/Microsoft.Bot.Builder.AI.Luis.dll": {}
+        }
+      },
+      "Microsoft.Bot.Builder.AI.QnA/4.1.5": {
+        "dependencies": {
+          "Microsoft.Bot.Builder": "4.1.5",
+          "Microsoft.Bot.Configuration": "4.1.5",
+          "SourceLink.Create.CommandLine": "2.8.1"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.Bot.Builder.AI.QnA.dll": {
+            "assemblyVersion": "4.1.5.0",
+            "fileVersion": "4.1.5.0"
+          }
+        },
+        "compile": {
+          "lib/netstandard2.0/Microsoft.Bot.Builder.AI.QnA.dll": {}
         }
       },
       "Microsoft.Bot.Builder.Azure/4.1.5": {
@@ -5562,6 +5579,13 @@
       "sha512": "sha512-Dslm0WG5Qqg02NhEceHJfprtHnzYhMWonHE63yEKDT1nYhmKPZjvWhnyUP1TipnUSjiO31217K3Xt+MB53tcHg==",
       "path": "microsoft.bot.builder.ai.luis/4.1.5",
       "hashPath": "microsoft.bot.builder.ai.luis.4.1.5.nupkg.sha512"
+    },
+    "Microsoft.Bot.Builder.AI.QnA/4.1.5": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-WG1Am9hjvvTNhe/UEt9UNKTujLYAsnIYm3YteHbtCJphxY/1PS91X0nTquIrsswfEK8Cw0WTJXS6Xs3OL/QhcQ==",
+      "path": "microsoft.bot.builder.ai.qna/4.1.5",
+      "hashPath": "microsoft.bot.builder.ai.qna.4.1.5.nupkg.sha512"
     },
     "Microsoft.Bot.Builder.Azure/4.1.5": {
       "type": "package",

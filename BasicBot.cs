@@ -43,6 +43,7 @@ namespace Microsoft.BotBuilderSamples
         private readonly BotServices _services;
         private readonly LuisServiceV3 luisServiceV3;
         private readonly QnAServiceHelper qnAServiceHelper;
+        private static bool InQnaMaker { get; set; } = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BasicBot"/> class.
@@ -87,11 +88,18 @@ namespace Microsoft.BotBuilderSamples
             // Create a dialog context
             var dc = await Dialogs.CreateContextAsync(turnContext);
 
+            if (InQnaMaker)
+            {
+                var qnaResponse = await this.GetQnAResponse(activity.Text, turnContext);
+                await turnContext.SendActivityAsync(qnaResponse);
+                return;
+            }
+            
             if (activity.Type == ActivityTypes.Message)
             {
                 // Perform a call to LUIS to retrieve results for the current activity message.
-                var luisResults = await _services.LuisServices[LuisConfiguration].RecognizeAsync(dc.Context, cancellationToken);
-                var luisResults2 = await luisServiceV3.PredictLUIS(turnContext.Activity.Text);
+                //var luisResults = await _services.LuisServices[LuisConfiguration].RecognizeAsync(dc.Context, cancellationToken);
+                var luisResults2 = await luisServiceV3.PredictLUIS(turnContext.Activity.Text, dc.Context);
 
                 //// If any entities were updated, treat as interruption.
                 //// For example, "no my name is tony" will manifest as an update of the name to be "tony".
@@ -126,7 +134,7 @@ namespace Microsoft.BotBuilderSamples
                             switch (topIntent)
                             {
                                 case PurchaseTicket:
-                                    await turnContext.SendActivityAsync("Purchase Ticket Intent detected. Check results ---> \n"+  luisResults2.Response);
+                                    await turnContext.SendActivityAsync(LaLigaBL.PurchaseTicket(luisResults2));
                                     break;
 
                                 case StatisticsIntent:
@@ -141,6 +149,7 @@ namespace Microsoft.BotBuilderSamples
                                 default:
                                     var qnaResponse = await this.GetQnAResponse(activity.Text, turnContext);
                                     await turnContext.SendActivityAsync(qnaResponse);
+                                    InQnaMaker = true;
                                     break;
                             }
 
@@ -255,6 +264,7 @@ namespace Microsoft.BotBuilderSamples
             if (prompts == null || prompts.Length < 1)
             {
                 outputActivity = MessageFactory.Text(qnaAnswer);
+                InQnaMaker = false;
             }
             else
             {

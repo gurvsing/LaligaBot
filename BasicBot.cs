@@ -92,6 +92,8 @@ namespace Microsoft.BotBuilderSamples
             {
                 var qnaResponse = await this.GetQnAResponse(activity.Text, turnContext);
                 await turnContext.SendActivityAsync(qnaResponse);
+                await _conversationState.SaveChangesAsync(turnContext);
+                await _userState.SaveChangesAsync(turnContext);
                 return;
             }
 

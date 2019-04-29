@@ -26,22 +26,23 @@ namespace Microsoft.BotBuilderSamples
                     new CardAction()
                     {
                         Value = prompt.DisplayText,
-                        Type =  ActionTypes.ImBack,
+                        Type = ActionTypes.ImBack,
                         Title = prompt.DisplayText,
                     });
             }
 
             var plCard = new HeroCard()
             {
-                Title = cardTitle,
+                //Title = cardTitle,
                 Subtitle = string.Empty,
-                Buttons = buttons
+                Buttons = buttons,
+                Text = cardTitle
             };
 
             var attachment = plCard.ToAttachment();
-
+            
             chatActivity.Attachments.Add(attachment);
-
+            
             return (Activity)chatActivity;
         }
     }

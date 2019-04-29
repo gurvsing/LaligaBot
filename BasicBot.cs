@@ -94,7 +94,7 @@ namespace Microsoft.BotBuilderSamples
                 await turnContext.SendActivityAsync(qnaResponse);
                 return;
             }
-            
+
             if (activity.Type == ActivityTypes.Message)
             {
                 // Perform a call to LUIS to retrieve results for the current activity message.
@@ -105,21 +105,21 @@ namespace Microsoft.BotBuilderSamples
                 //// For example, "no my name is tony" will manifest as an update of the name to be "tony".
                 //var topScoringIntent = luisResults?.GetTopScoringIntent();
 
-                var topIntent = luisResults2.Intent;
-
+                //var topIntent = luisResults2.Intent;
+                var isMulti = luisResults2.Count > 1;
                 // update greeting state with any entities captured
                 //await UpdateGreetingState(luisResults, dc.Context);
 
                 // Handle conversation interrupts first.
-                var interrupted = await IsTurnInterruptedAsync(dc, topIntent);
-                if (interrupted)
-                {
-                    // Bypass the dialog.
-                    // Save state before the next turn.
-                    await _conversationState.SaveChangesAsync(turnContext);
-                    await _userState.SaveChangesAsync(turnContext);
-                    return;
-                }
+                //var interrupted = await IsTurnInterruptedAsync(dc, topIntent);
+                //if (interrupted)
+                //{
+                //    // Bypass the dialog.
+                //    // Save state before the next turn.
+                //    await _conversationState.SaveChangesAsync(turnContext);
+                //    await _userState.SaveChangesAsync(turnContext);
+                //    return;
+                //}
 
                 // Continue the current dialog
                 var dialogResult = await dc.ContinueDialogAsync();
@@ -127,45 +127,50 @@ namespace Microsoft.BotBuilderSamples
                 // if no one has responded,
                 if (!dc.Context.Responded)
                 {
-                    // examine results from active dialog
-                    switch (dialogResult.Status)
+                    foreach (var response in luisResults2)
                     {
-                        case DialogTurnStatus.Empty:
-                            switch (topIntent)
-                            {
-                                case PurchaseTicket:
-                                    await turnContext.SendActivityAsync(LaLigaBL.PurchaseTicket(luisResults2));
-                                    break;
+                        var topIntent = response.Intent;
 
-                                case StatisticsIntent:
-                                    await turnContext.SendActivityAsync("Get Statistic Intent detected. Check results ---> \n" + luisResults2.Response);
-                                    break;
+                        // examine results from active dialog
+                        switch (dialogResult.Status)
+                        {
+                            case DialogTurnStatus.Empty:
+                                switch (topIntent)
+                                {
+                                    case PurchaseTicket:
+                                        await turnContext.SendActivityAsync(LaLigaBL.PurchaseTicket(response, isMulti));
+                                        break;
 
-                                case FindMatchIntent:
-                                    await turnContext.SendActivityAsync(LaLigaBL.FindMatch(luisResults2).ResponseText);
-                                    break;
+                                    case StatisticsIntent:
+                                        await turnContext.SendActivityAsync("Get Statistic Intent detected. Check results ---> \n" + response);
+                                        break;
 
-                                case NoneIntent:
-                                default:
-                                    var qnaResponse = await this.GetQnAResponse(activity.Text, turnContext);
-                                    await turnContext.SendActivityAsync(qnaResponse);
-                                    InQnaMaker = true;
-                                    break;
-                            }
+                                    case FindMatchIntent:
+                                        await turnContext.SendActivityAsync(LaLigaBL.FindMatch(response).ResponseText);
+                                        break;
 
-                            break;
+                                    case NoneIntent:
+                                    default:
+                                        var qnaResponse = await this.GetQnAResponse(activity.Text, turnContext);
+                                        await turnContext.SendActivityAsync(qnaResponse);
+                                        InQnaMaker = true;
+                                        break;
+                                }
 
-                        case DialogTurnStatus.Waiting:
-                            // The active dialog is waiting for a response from the user, so do nothing.
-                            break;
+                                break;
 
-                        case DialogTurnStatus.Complete:
-                            await dc.EndDialogAsync();
-                            break;
+                            case DialogTurnStatus.Waiting:
+                                // The active dialog is waiting for a response from the user, so do nothing.
+                                break;
 
-                        default:
-                            await dc.CancelAllDialogsAsync();
-                            break;
+                            case DialogTurnStatus.Complete:
+                                await dc.EndDialogAsync();
+                                break;
+
+                            default:
+                                await dc.CancelAllDialogsAsync();
+                                break;
+                        }
                     }
                 }
             }

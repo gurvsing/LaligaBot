@@ -31,7 +31,7 @@
     },
     {
       "appId": "f5c401aa-8e8f-41e9-b0e7-ff66cc1029e5",
-      "appPassword": "Zl+wr+5+ZW3+tG99uVZ+Aw==!briWuQ64f0K978M0FwTAtA1oq00oZNF2sgQgKOX3dlk=",
+      "appPassword": "uvpkMRVI867#]ocvPEM26;^",
       "endpoint": "https://luis-csharp-bot-test-hazem.azurewebsites.net/api/messages",
       "type": "endpoint",
       "name": "production",

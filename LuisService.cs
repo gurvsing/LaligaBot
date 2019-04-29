@@ -54,7 +54,7 @@ namespace BasicBot
 
         public static HashSet<string> Coreferences = new HashSet<string>() { "they", "we", "them", "their" };
 
-        public static string url = "https://dialogice4endpoint.cloudapp.net:8081/api/v3.0-preview/apps/9552ae0e-7d53-4cdc-a18e-eadd87320f77/slots/PRODUCTION/predict?log=true&subscription-key=123";
+        public static string url = "https://westus.api.cognitive.microsoft.com/luis/v3.0-preview/apps/e011cee6-32a2-43df-bfcc-1979d87fd506/slots/PRODUCTION/predict?log=true&subscription-key=014fee3605e84fdc9d772b8092a7e7f4&multiple-segments=true";
 
         public string subscriptionKey { get; set; }
 
@@ -66,7 +66,7 @@ namespace BasicBot
             appId = "3da9e60-fe37-4bfc-bb05-fef9eedd676f";
         }
 
-        public async Task<LuisResponse> PredictLUIS(string query, ITurnContext turnContext)
+        public async Task<List<LuisResponse>> PredictLUIS(string query, ITurnContext turnContext)
         {
             using (var httpClientHandler = new HttpClientHandler())
             {
@@ -75,21 +75,39 @@ namespace BasicBot
                 {
                     
                     var postObject = JsonConvert.SerializeObject(CreateV3Request(query));
+                    
                     var requestContent = new StringContent(postObject, Encoding.UTF8, "application/json");
 
-                    await this.LogLUISTrace(JObject.Parse(postObject), turnContext);
+                    await this.LogLUISTrace(JObject.Parse(postObject), turnContext, "LUIS Request");
 
                     var response = await client.PostAsync(url, requestContent);
                     var responseStr = await response.Content.ReadAsStringAsync();
                     dynamic content = JObject.Parse(responseStr);
+                    var beautified = content.ToString(Formatting.Indented);
 
                     var v3AppConverter = new V3App();
                     V3App responseNew = v3AppConverter.Convert(content);
-                    var beautified = content.ToString(Formatting.Indented);
-                    await this.LogLUISTrace(content, turnContext);
-                    var intent = responseNew.Prediction.TopIntent;
-                    var entities = responseNew.Prediction.Entities;
-                    return new LuisResponse(intent, entities, beautified);
+                    var isMulti = responseNew.Prediction.Intents.ContainsKey(V3App.Intent.MultipleSegments) && responseNew.Prediction.Intents[V3App.Intent.MultipleSegments].segments.Count > 1 && responseNew.Prediction.Intents[V3App.Intent.MultipleSegments].segments[0].TopIntent == "FindMatch" && responseNew.Prediction.Intents[V3App.Intent.MultipleSegments].segments[1].TopIntent == "PurchaseTicket";
+
+                    await this.LogLUISTrace(content, turnContext, "LUIS Response");
+
+                    if (!isMulti)
+                    {
+                        var intent = responseNew.Prediction.TopIntent;
+                        var entities = responseNew.Prediction.Entities;
+                        return new List<LuisResponse>() { new LuisResponse(intent, entities, beautified) }; ;
+                    }
+                    else
+                    {
+                        var predictions = new List<LuisResponse>();
+                        foreach (var prediction in responseNew.Prediction.Intents[V3App.Intent.MultipleSegments].segments)
+                        {
+                            var intent = prediction.TopIntent;
+                            var entities = prediction.Entities;
+                            predictions.Add(new LuisResponse(intent, entities, beautified));
+                        }
+                        return predictions;
+                    }
                 }
             }
         }
@@ -103,9 +121,11 @@ namespace BasicBot
                 options = new Dictionary<string, dynamic>()
                 {
 
-                    {"overridePredictions", true }
+                    { "overridePredictions", true }
 
-                }
+                },
+                externalEntities = new List<V3Request._ExternalEntities>(),
+                dynamicLists = new List<V3Request._DynamicLists>()
             };
             var tokens = Query.Split(" ");
             var tokenSet = new HashSet<string>(tokens);
@@ -160,6 +180,7 @@ namespace BasicBot
 
                 LaLigaBL.IsChampionsLeague = true;
             }
+            
 
             return v3Request;
         }
@@ -202,15 +223,15 @@ namespace BasicBot
             }
         }
 
-        public async Task<Microsoft.Bot.Schema.ResourceResponse> LogLUISTrace(dynamic luisResult, ITurnContext turnContext)
+        public async Task<Microsoft.Bot.Schema.ResourceResponse> LogLUISTrace(dynamic luis, ITurnContext turnContext, string luisType)
         {
             var traceInfo = JObject.FromObject(
                 new
                 {
-                    luisResult,
+                    luis,
                 });
 
-            return await turnContext.TraceActivityAsync("LuisRecognizer", traceInfo, "Hello", "Luis Result").ConfigureAwait(false);
+            return await turnContext.TraceActivityAsync("LuisRecognizer", traceInfo, luisType, luisType).ConfigureAwait(false);
         }
 
         public class V3App
@@ -227,7 +248,7 @@ namespace BasicBot
             {
                 public string NormalizedQuery;
                 public string TopIntent;
-                public Dictionary<Intent, IntentScore> Intents;
+                public Dictionary<Intent, IntentsType> Intents;
                 public _Entities Entities;
 
             }
@@ -236,7 +257,8 @@ namespace BasicBot
                 FindMatch,
                 GetStatistics,
                 None,
-                PurchaseTicket
+                PurchaseTicket,
+                MultipleSegments
             };
 
             public class _Entities
@@ -268,6 +290,14 @@ namespace BasicBot
                 public _Instance _instance;
             }
             public _Entities Entities;
+
+            public class IntentsType {
+                [JsonProperty("score")]
+                public double? Score { get; set; }
+
+                [JsonProperty("segments")]
+                public List<_Prediction> segments = new List<_Prediction>();
+            }
 
             [JsonExtensionData(ReadData = true, WriteData = true)]
             public IDictionary<string, object> Properties { get; set; }

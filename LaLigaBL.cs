@@ -40,9 +40,12 @@ namespace BasicBot
         public static string CoreferenceHome;
         public static string CoreferenceAway;
         public static bool IsChampionsLeague = false;
+        public static FindMatchResponse LastGameInMemory;
 
-        public static FindMatchResponse FindMatch(LuisResponse luisResults)
+        public static FindMatchResponse FindMatch(LuisResponse luisResults, bool isMulti = false)
         {
+            if (isMulti)
+                return LastGameInMemory;
             MatchObject matchInfo;
             string finalMatchDescription = "";
             var home = luisResults.Entities.ContainsKey("Home") ? luisResults.Entities["Home"] : null;
@@ -67,13 +70,14 @@ namespace BasicBot
             };
             LuisServiceV3.CoreferenceHome = team ?? home ?? away;
             LaLigaBL.IsChampionsLeague = false;
+            LastGameInMemory = findMatchResult;
             return findMatchResult;
         }
 
-        public static string PurchaseTicket(LuisResponse luisResults)
+        public static string PurchaseTicket(LuisResponse luisResults, bool isMulti = false)
         {
             var finalResponse = "";
-            FindMatchResponse findMatchResponse = FindMatch(luisResults);
+            FindMatchResponse findMatchResponse = FindMatch(luisResults, isMulti);
             var home = findMatchResponse.Home;
             var away = findMatchResponse.Away;
             var team = findMatchResponse.Team;
@@ -86,7 +90,7 @@ namespace BasicBot
 
             if (home != null && away != null)
             {
-                finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the {home} vs {away} game at {stadiums[home]} taking place on {findMatchResponse.MatchDate}. The total price of the tickets is {ticketNumber * TicketPrice}. Would you like to proceed to payment?";
+                finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the {home} vs {away} game at {stadiums[home]} taking place on {findMatchResponse.MatchDate}. The total price of the tickets is {ticketNumber * TicketPrice}. It will be deducted from your account balance.";
             }
             else if ((team != null && home == null && away == null) || (home != null && away == null) || (home == null && away != null))
             {
@@ -104,10 +108,6 @@ namespace BasicBot
         public static MatchObject GetMatchInfo(string home, string away, string team, string relative = "Previous")
         {
             var matchObject = new MatchObject();
-            if (IsChampionsLeague)
-            {
-
-            }
             if(home != null && away != null && home != away)
             {
                 var Game = AllGames.Where(match => match.HomeTeam == home && match.AwayTeam == away).SingleOrDefault();

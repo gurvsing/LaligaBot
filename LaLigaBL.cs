@@ -19,6 +19,8 @@ namespace BasicBot
         public string Team { get; set; }
 
         public string ResponseText { get; set; }
+
+        public LaLigaBL.PictureType PictureType { get; set; }
     }
     public static class LaLigaBL
     {
@@ -41,7 +43,12 @@ namespace BasicBot
         public static string CoreferenceAway;
         public static bool IsChampionsLeague = false;
         public static FindMatchResponse LastGameInMemory;
-
+        public enum PictureType
+        {
+            ChampionsLeague,
+            LaLiga,
+            Ticket
+        }
         public static FindMatchResponse FindMatch(LuisResponse luisResults, bool isMulti = false)
         {
             if (isMulti)
@@ -67,6 +74,7 @@ namespace BasicBot
                 MatchDate = matchInfo.MatchDate,
                 ResponseText = matchInfo.MatchDescription,
                 Team = team,
+                PictureType = LaLigaBL.IsChampionsLeague ? PictureType.ChampionsLeague : PictureType.LaLiga
             };
             LuisServiceV3.CoreferenceHome = team ?? home ?? away;
             LaLigaBL.IsChampionsLeague = false;
@@ -90,7 +98,7 @@ namespace BasicBot
 
             if (home != null && away != null)
             {
-                finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the {home} vs {away} game at {stadiums[home]} taking place on {findMatchResponse.MatchDate}. The total price of the tickets is {ticketNumber * TicketPrice}. It will be deducted from your account balance.";
+                finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the **{home}** vs **{away}** game at *{stadiums[home]}* taking place on **{findMatchResponse.MatchDate}**. The total price of the tickets is {ticketNumber * TicketPrice}. It will be deducted from your account balance.";
             }
             else if ((team != null && home == null && away == null) || (home != null && away == null) || (home == null && away != null))
             {
@@ -100,7 +108,7 @@ namespace BasicBot
                     finalDate = matches[singleTeam];
                 else
                     matches[singleTeam] = finalDate;
-                finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the {singleTeam}'s next game at {stadiums[singleTeam]} taking place on {findMatchResponse.MatchDate}. The total price of the tickets is {ticketNumber * TicketPrice}. Would you like to proceed to payment?";
+                finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the **{singleTeam}'s** next game at *{stadiums[singleTeam]}* taking place on **{findMatchResponse.MatchDate}**. The total price of the tickets is *{ticketNumber * TicketPrice}*. It will be deducted from your account balance.";
             };
             return finalResponse;
         }
@@ -130,7 +138,7 @@ namespace BasicBot
                     matchObject.AwayTeam = away;
                     matchObject.HomeTeam = home;
                     matchObject.MatchDate = Game.Date;
-                    matchObject.MatchDescription = $"{home} will be playing at home against {away} on {matchObject.MatchDate}.\n The game will be played at {stadiums[home]}";
+                    matchObject.MatchDescription = $"**{home}** will be playing at home against **{away}** on **{matchObject.MatchDate}**.\n The game will be played at **{stadiums[home]}**";
                 };
                 return matchObject;
             }
@@ -164,7 +172,7 @@ namespace BasicBot
                     matchObject.AwayTeam = Game.AwayTeam;
                     var awayOrHome = singleTeam == matchObject.HomeTeam ? "at home against" : "away against";
                     var otherTeam = singleTeam == matchObject.HomeTeam ? Game.AwayTeam : Game.HomeTeam;
-                    matchObject.MatchDescription = $"{singleTeam}'s next game will be {awayOrHome} {otherTeam} on {Game.Date}.\n The game will played at the {Game.HomeTeam}'s stadium {stadiums[Game.HomeTeam]}.";
+                    matchObject.MatchDescription = $"**{singleTeam}'s** next game will be {awayOrHome} **{otherTeam}** on **{Game.Date}**.\n The game will played at the {Game.HomeTeam}'s stadium *{stadiums[Game.HomeTeam]}*.";
                 }
 
             }
@@ -179,9 +187,9 @@ namespace BasicBot
             matchObject.HomeTeam = home;
             matchObject.MatchDate = Game.Date;
             matchObject.WinningTeam = Game.FTR == "H" ? home : Game.FTR == "A" ? away : null;
-            var result = Game.FTR == "H" ? $"a home win for {home}" : Game.FTR == "A" ? $"an away win for {away}" : "a draw";
+            var result = Game.FTR == "H" ? $"a home win for **{home}**" : Game.FTR == "A" ? $"an away win for **{away}**" : "a draw";
             matchObject.MatchResult = $"{Game.FTHG} - {Game.FTAG}";
-            matchObject.MatchDescription = $"{home} played at Home against {away} on {Game.Date} at {stadiums[home]}.\nThe game ended with {result}. \n The score was {home} {Game.FTHG} - {Game.FTAG} {away} ";
+            matchObject.MatchDescription = $"**{home}** played at Home against **{away}** on **{Game.Date}** at *{stadiums[home]}*.\nThe game ended with {result}. \n The score was **{home}** *{Game.FTHG} - {Game.FTAG}* **{away}**";
             return matchObject;
         }
 

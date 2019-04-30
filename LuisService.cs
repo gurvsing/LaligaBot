@@ -255,7 +255,6 @@ namespace BasicBot
             public enum Intent
             {
                 FindMatch,
-                GetStatistics,
                 None,
                 PurchaseTicket,
                 MultipleSegments

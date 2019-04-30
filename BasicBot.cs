@@ -23,7 +23,6 @@ namespace Microsoft.BotBuilderSamples
     {
         // Supported LUIS Intents
         public const string FindMatchIntent = "FindMatch";
-        public const string StatisticsIntent = "GetStatistics";
         public const string PurchaseTicket = "PurchaseTicket";
         public const string NoneIntent = "None";
         public const string HelpIntent = "HelpIntent";
@@ -140,15 +139,13 @@ namespace Microsoft.BotBuilderSamples
                                 switch (topIntent)
                                 {
                                     case PurchaseTicket:
-                                        await turnContext.SendActivityAsync(LaLigaBL.PurchaseTicket(response, isMulti));
-                                        break;
-
-                                    case StatisticsIntent:
-                                        await turnContext.SendActivityAsync("Get Statistic Intent detected. Check results ---> \n" + response);
+                                        var purchaseTicketResponse = LaLigaBL.PurchaseTicket(response, isMulti);
+                                        await turnContext.SendActivityAsync(CardHelper.GetLUISHeroCard(purchaseTicketResponse, LaLigaBL.PictureType.Ticket));
                                         break;
 
                                     case FindMatchIntent:
-                                        await turnContext.SendActivityAsync(LaLigaBL.FindMatch(response).ResponseText);
+                                        var findMatchResponse = LaLigaBL.FindMatch(response);
+                                        await turnContext.SendActivityAsync(CardHelper.GetLUISHeroCard(findMatchResponse.ResponseText, findMatchResponse.PictureType));
                                         break;
 
                                     case NoneIntent:

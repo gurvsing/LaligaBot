@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Bot.Builder.LanguageGeneration;
 
 namespace BasicBot
 {
@@ -31,7 +32,7 @@ namespace BasicBot
             {"Betis", "Benito Villamarin"}, {"Leganes", "Butarque"}, {"Levante", "Ciutat de Valencia"}, {"Getafe", "Coliseum Alfonso Perez"},
             {"Villareal", "Estadio de la Ceramica"}, {"Huesca", "El Alcoraz" }, {"Eibar", "Ipurua"}, {"Valladolid", "Jose Zorrilla"}, {"Alaves", "Mendizorrotta"},
             {"Valencia", "Mestalla" }, {"Girona", "Montilivi"}, {"Sevilla", "Ramón Sánchez Pizjuán"}, {"Ath Bilbao", "San Mames"}, {"Celta", "Balaidos"},
-            {"Espanyol", "RCDE Stadium" }, {"Vallecano", "Vallecas"}, {"Sociedad", "Anoeta"}
+            {"Espanyol", "RCDE Stadium" }, {"Vallecano", "Vallecas"}, {"Sociedad", "Anoeta"}, {"Liverpool", "Anfield"}, {"Tottenham", "White Hart Lane"}, {"Ajax", "Johan Cruijff Arena"}
         };
         public static List<MatchJSON> AllGames = JsonConvert.DeserializeObject<List<MatchJSON>>(File.ReadAllLines("LaLigaData.json")[0]);
         public static List<MatchJSON> FutureGames = JsonConvert.DeserializeObject<List<MatchJSON>>(File.ReadAllLines("LaLigaRest.json")[0]);
@@ -43,6 +44,8 @@ namespace BasicBot
         public static string CoreferenceAway;
         public static bool IsChampionsLeague = false;
         public static FindMatchResponse LastGameInMemory;
+        public static TemplateEngine lgEngine = TemplateEngine.FromFiles("LaLigaTemplates.lg");
+
         public enum PictureType
         {
             ChampionsLeague,
@@ -84,7 +87,7 @@ namespace BasicBot
 
         public static string PurchaseTicket(LuisResponse luisResults, bool isMulti = false)
         {
-            var finalResponse = "";
+            var finalResponse = string.Empty;
             FindMatchResponse findMatchResponse = FindMatch(luisResults, isMulti);
             var home = findMatchResponse.Home;
             var away = findMatchResponse.Away;
@@ -98,18 +101,16 @@ namespace BasicBot
 
             if (home != null && away != null)
             {
-                finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the **{home}** vs **{away}** game at *{stadiums[home]}* taking place on **{findMatchResponse.MatchDate}**. The total price of the tickets is {ticketNumber * TicketPrice}. It will be deducted from your account balance.";
+                finalResponse = lgEngine.EvaluateTemplate("PurchaseTicketTemplate", new { home = home, away = away, ticketNumber = ticketNumber, ticketString = ticketString, stadium = stadiums[home], date = findMatchResponse.MatchDate, price = ticketNumber * TicketPrice });
+                //finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the **{home}** vs **{away}** game at *{stadiums[home]}* taking place on **{findMatchResponse.MatchDate}**. The total price of the tickets is {ticketNumber * TicketPrice}. It will be deducted from your account balance.";
             }
-            else if ((team != null && home == null && away == null) || (home != null && away == null) || (home == null && away != null))
-            {
-                string finalDate = "";
-                var singleTeam = team ?? home ?? away;
-                if (matches.ContainsKey("singleTeam"))
-                    finalDate = matches[singleTeam];
-                else
-                    matches[singleTeam] = finalDate;
-                finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the **{singleTeam}'s** next game at *{stadiums[singleTeam]}* taking place on **{findMatchResponse.MatchDate}**. The total price of the tickets is *{ticketNumber * TicketPrice}*. It will be deducted from your account balance.";
-            };
+            //else if ((team != null && home == null && away == null) || (home != null && away == null) || (home == null && away != null))
+            //{
+            //    string finalDate = "";
+            //    var singleTeam = team ?? home ?? away;
+            //    finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the **{singleTeam}'s** next game at *{stadiums[singleTeam]}* taking place on **{findMatchResponse.MatchDate}**. The total price of the tickets is *{ticketNumber * TicketPrice}*. It will be deducted from your account balance.";
+            //};
+
             return finalResponse;
         }
 
@@ -138,7 +139,7 @@ namespace BasicBot
                     matchObject.AwayTeam = away;
                     matchObject.HomeTeam = home;
                     matchObject.MatchDate = Game.Date;
-                    matchObject.MatchDescription = $"**{home}** will be playing at home against **{away}** on **{matchObject.MatchDate}**.\n The game will be played at **{stadiums[home]}**";
+                    matchObject.MatchDescription = lgEngine.EvaluateTemplate("NextGameTemplate", new { team = home, awayOrHome = "at home against", opponent = away, date = matchObject.MatchDate, home = home, stadium = stadiums[home] });
                 };
                 return matchObject;
             }
@@ -170,15 +171,15 @@ namespace BasicBot
 
                     matchObject.HomeTeam = Game.HomeTeam;
                     matchObject.AwayTeam = Game.AwayTeam;
-                    var awayOrHome = singleTeam == matchObject.HomeTeam ? "at home against" : "away against";
+                    var awayOrHome = singleTeam == matchObject.HomeTeam ? "at home" : "away";
                     var otherTeam = singleTeam == matchObject.HomeTeam ? Game.AwayTeam : Game.HomeTeam;
-                    matchObject.MatchDescription = $"**{singleTeam}'s** next game will be {awayOrHome} **{otherTeam}** on **{Game.Date}**.\n The game will played at the {Game.HomeTeam}'s stadium *{stadiums[Game.HomeTeam]}*.";
+                    matchObject.MatchDescription = lgEngine.EvaluateTemplate("NextGameTemplate", new { team = singleTeam, awayOrHome = awayOrHome, opponent = otherTeam, date = Game.Date, home = Game.HomeTeam, stadium = stadiums[Game.HomeTeam] });
+                    //matchObject.MatchDescription = $"**{singleTeam}'s** next game will be {awayOrHome} **{otherTeam}** on **{Game.Date}**.\n The game will played at the {Game.HomeTeam}'s stadium *{stadiums[Game.HomeTeam]}*.";
                 }
 
             }
             return matchObject;
         }
-
 
         public static MatchObject GetMatchObject(MatchJSON Game, string home, string away)
         {
@@ -189,7 +190,8 @@ namespace BasicBot
             matchObject.WinningTeam = Game.FTR == "H" ? home : Game.FTR == "A" ? away : null;
             var result = Game.FTR == "H" ? $"a home win for **{home}**" : Game.FTR == "A" ? $"an away win for **{away}**" : "a draw";
             matchObject.MatchResult = $"{Game.FTHG} - {Game.FTAG}";
-            matchObject.MatchDescription = $"**{home}** played at Home against **{away}** on **{Game.Date}** at *{stadiums[home]}*.\nThe game ended with {result}. \n The score was **{home}** *{Game.FTHG} - {Game.FTAG}* **{away}**";
+            matchObject.MatchDescription = lgEngine.EvaluateTemplate("FindMatchResult", new { home = home, away = away, date = Game.Date, stadium = stadiums[home], result = result, homeGoals = Game.FTHG, awayGoals = Game.FTAG, });
+            //matchObject.MatchDescription = $"**{home}** played at Home against **{away}** on **{Game.Date}** at *{stadiums[home]}*.\nThe game ended with {result}. \n The score was **{home}** *{Game.FTHG} - {Game.FTAG}* **{away}**";
             return matchObject;
         }
 

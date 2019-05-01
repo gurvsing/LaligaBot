@@ -42,6 +42,7 @@ namespace Microsoft.BotBuilderSamples
         private readonly BotServices _services;
         private readonly LuisServiceV3 luisServiceV3;
         private readonly QnAServiceHelper qnAServiceHelper;
+
         private static bool InQnaMaker { get; set; } = false;
 
         /// <summary>
@@ -121,6 +122,7 @@ namespace Microsoft.BotBuilderSamples
                 //    await _userState.SaveChangesAsync(turnContext);
                 //    return;
                 //}
+
 
                 // Continue the current dialog
                 var dialogResult = await dc.ContinueDialogAsync();
@@ -255,7 +257,7 @@ namespace Microsoft.BotBuilderSamples
             var newState = new QnABotState();
 
             var qnaState = await _qnaStateAccessor.GetAsync(turnContext, () => new QnABotState());
-            var qnaResult = await this.qnAServiceHelper.QueryQnAService(query, qnaState);
+            var qnaResult = await this.qnAServiceHelper.QueryQnAService(query, qnaState, turnContext);
             var qnaAnswer = qnaResult[0].Answer;
 
             if (string.Equals(qnaAnswer, "No good match found in KB.", StringComparison.OrdinalIgnoreCase))

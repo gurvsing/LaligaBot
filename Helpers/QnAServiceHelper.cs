@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using BasicBot;
+using Microsoft.Bot.Builder;
 
 namespace Microsoft.BotBuilderSamples
 {
@@ -22,23 +24,25 @@ namespace Microsoft.BotBuilderSamples
             this.InitQnAService();
         }
 
-        public async Task<QnAResult[]> QueryQnAService(string query, QnABotState qnAcontext)
+        public async Task<QnAResult[]> QueryQnAService(string query, QnABotState qnAcontext, ITurnContext turnContext)
         {
             var requestUrl = $"{this._endpoint.Host}/knowledgebases/{this._endpoint.KnowledgeBaseId}/generateanswer";
             var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
-            var jsonRequest = JsonConvert.SerializeObject(
-                new
-                {
-                    question = query,
-                    top = this._options.Top,
-                    context = qnAcontext,
-                    strictFilters = this._options.StrictFilters,
-                    metadataBoost = this._options.MetadataBoost,
-                    scoreThreshold = this._options.ScoreThreshold,
-                }, Formatting.None);
+            var requestObject = new
+            {
+                question = query,
+                top = this._options.Top,
+                context = qnAcontext,
+                strictFilters = this._options.StrictFilters,
+                metadataBoost = this._options.MetadataBoost,
+                scoreThreshold = this._options.ScoreThreshold,
+            };
+            var jsonRequest = JsonConvert.SerializeObject(requestObject, Formatting.None);
 
             request.Headers.Add("Authorization", $"EndpointKey {this._endpoint.EndpointKey}");
             request.Content = new StringContent(jsonRequest, System.Text.Encoding.UTF8, "application/json");
+
+            LuisServiceV3.LogLUISTrace(requestObject, turnContext, "QnA Request");
 
             var response = await this._httpClient.SendAsync(request).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
@@ -46,6 +50,7 @@ namespace Microsoft.BotBuilderSamples
             var contentString = response.Content.ReadAsStringAsync().Result;
 
             var result = JsonConvert.DeserializeObject<QnAResultList>(contentString);
+            LuisServiceV3.LogLUISTrace(result, turnContext, "QnA Result");
 
             return result.Answers;
         }

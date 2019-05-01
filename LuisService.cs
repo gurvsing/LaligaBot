@@ -73,12 +73,12 @@ namespace BasicBot
                 httpClientHandler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; };
                 using (var client = new HttpClient(httpClientHandler))
                 {
-                    
-                    var postObject = JsonConvert.SerializeObject(CreateV3Request(query));
+                    var postData = CreateV3Request(query);
+                    var postObject = JsonConvert.SerializeObject(postData);
                     
                     var requestContent = new StringContent(postObject, Encoding.UTF8, "application/json");
 
-                    await this.LogLUISTrace(JObject.Parse(postObject), turnContext, "LUIS Request");
+                    await LogLUISTrace(postData, turnContext, "LUIS Request");
 
                     var response = await client.PostAsync(url, requestContent);
                     var responseStr = await response.Content.ReadAsStringAsync();
@@ -89,7 +89,7 @@ namespace BasicBot
                     V3App responseNew = v3AppConverter.Convert(content);
                     var isMulti = responseNew.Prediction.Intents.ContainsKey(V3App.Intent.MultipleSegments) && responseNew.Prediction.Intents[V3App.Intent.MultipleSegments].segments.Count > 1 && responseNew.Prediction.Intents[V3App.Intent.MultipleSegments].segments[0].TopIntent == "FindMatch" && responseNew.Prediction.Intents[V3App.Intent.MultipleSegments].segments[1].TopIntent == "PurchaseTicket";
 
-                    await this.LogLUISTrace(content, turnContext, "LUIS Response");
+                    await LogLUISTrace(content, turnContext, "LUIS Response");
 
                     if (!isMulti)
                     {
@@ -223,13 +223,9 @@ namespace BasicBot
             }
         }
 
-        public async Task<Microsoft.Bot.Schema.ResourceResponse> LogLUISTrace(dynamic luis, ITurnContext turnContext, string luisType)
+        public static async Task<Microsoft.Bot.Schema.ResourceResponse> LogLUISTrace(dynamic luis, ITurnContext turnContext, string luisType)
         {
-            var traceInfo = JObject.FromObject(
-                new
-                {
-                    luis,
-                });
+            object traceInfo = luis;
 
             return await turnContext.TraceActivityAsync("LuisRecognizer", traceInfo, luisType, luisType).ConfigureAwait(false);
         }

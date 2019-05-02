@@ -42,7 +42,7 @@ namespace Microsoft.BotBuilderSamples
             request.Headers.Add("Authorization", $"EndpointKey {this._endpoint.EndpointKey}");
             request.Content = new StringContent(jsonRequest, System.Text.Encoding.UTF8, "application/json");
 
-            LuisServiceV3.LogLUISTrace(requestObject, turnContext, "QnA Request");
+            await LuisServiceV3.LogCustomTrace(requestObject, turnContext, "QnA Request", "QnA");
 
             var response = await this._httpClient.SendAsync(request).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
@@ -50,7 +50,7 @@ namespace Microsoft.BotBuilderSamples
             var contentString = response.Content.ReadAsStringAsync().Result;
 
             var result = JsonConvert.DeserializeObject<QnAResultList>(contentString);
-            LuisServiceV3.LogLUISTrace(result, turnContext, "QnA Result");
+            await LuisServiceV3.LogCustomTrace(result, turnContext, "QnA Result", "QnA");
 
             return result.Answers;
         }

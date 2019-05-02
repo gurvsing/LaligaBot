@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using BasicBot;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
+using Microsoft.Bot.Builder.TraceExtensions;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -25,8 +26,6 @@ namespace Microsoft.BotBuilderSamples
         public const string FindMatchIntent = "FindMatch";
         public const string PurchaseTicket = "PurchaseTicket";
         public const string NoneIntent = "None";
-        public const string HelpIntent = "HelpIntent";
-        public const string CancelIntent = "CancelIntent";
 
         /// <summary>
         /// Key in the bot config (.bot file) for the LUIS instance.
@@ -42,6 +41,7 @@ namespace Microsoft.BotBuilderSamples
         private readonly BotServices _services;
         private readonly LuisServiceV3 luisServiceV3;
         private readonly QnAServiceHelper qnAServiceHelper;
+        private readonly LaLigaBL laLigaBL;
 
         private static bool InQnaMaker { get; set; } = false;
 
@@ -66,6 +66,7 @@ namespace Microsoft.BotBuilderSamples
                 throw new InvalidOperationException($"The bot configuration does not contain a service type of `luis` with the id `{LuisConfiguration}`.");
             }
 
+            laLigaBL = new LaLigaBL();
             luisServiceV3 = new LuisServiceV3();
             qnAServiceHelper = new QnAServiceHelper();
 
@@ -88,41 +89,21 @@ namespace Microsoft.BotBuilderSamples
             // Create a dialog context
             var dc = await Dialogs.CreateContextAsync(turnContext);
 
-            if (InQnaMaker)
-            {
-                var qnaResponse = await this.GetQnAResponse(activity.Text, turnContext);
-                await turnContext.SendActivityAsync(qnaResponse);
-                await _conversationState.SaveChangesAsync(turnContext);
-                await _userState.SaveChangesAsync(turnContext);
-                return;
-            }
-
             if (activity.Type == ActivityTypes.Message)
             {
+                // Checks if status is currently inside QnA Maker multi turn situation
+                if (InQnaMaker)
+                {
+                    var qnaResponse = await this.GetQnAResponse(activity.Text, turnContext);
+                    await turnContext.SendActivityAsync(qnaResponse);
+                    await _conversationState.SaveChangesAsync(turnContext);
+                    await _userState.SaveChangesAsync(turnContext);
+                    return;
+                }
+
                 // Perform a call to LUIS to retrieve results for the current activity message.
-                //var luisResults = await _services.LuisServices[LuisConfiguration].RecognizeAsync(dc.Context, cancellationToken);
-                var luisResults2 = await luisServiceV3.PredictLUIS(turnContext.Activity.Text, dc.Context);
-
-                //// If any entities were updated, treat as interruption.
-                //// For example, "no my name is tony" will manifest as an update of the name to be "tony".
-                //var topScoringIntent = luisResults?.GetTopScoringIntent();
-
-                //var topIntent = luisResults2.Intent;
-                var isMulti = luisResults2.Count > 1;
-                // update greeting state with any entities captured
-                //await UpdateGreetingState(luisResults, dc.Context);
-
-                // Handle conversation interrupts first.
-                //var interrupted = await IsTurnInterruptedAsync(dc, topIntent);
-                //if (interrupted)
-                //{
-                //    // Bypass the dialog.
-                //    // Save state before the next turn.
-                //    await _conversationState.SaveChangesAsync(turnContext);
-                //    await _userState.SaveChangesAsync(turnContext);
-                //    return;
-                //}
-
+                // Until LUIS API v3 is integrated, we will call the v3 endpoint directly using a created service
+                var luisResults = await luisServiceV3.PredictLUIS(turnContext.Activity.Text, dc.Context);
 
                 // Continue the current dialog
                 var dialogResult = await dc.ContinueDialogAsync();
@@ -130,7 +111,8 @@ namespace Microsoft.BotBuilderSamples
                 // if no one has responded,
                 if (!dc.Context.Responded)
                 {
-                    foreach (var response in luisResults2)
+                    // loop through all the LUIS predictions, these can be single or multiple if multi-intent is enabled
+                    foreach (var response in luisResults)
                     {
                         var topIntent = response.Intent;
 
@@ -141,18 +123,19 @@ namespace Microsoft.BotBuilderSamples
                                 switch (topIntent)
                                 {
                                     case PurchaseTicket:
-                                        var purchaseTicketResponse = LaLigaBL.PurchaseTicket(response, isMulti);
+                                        var purchaseTicketResponse = laLigaBL.PurchaseTicket(response);
                                         await turnContext.SendActivityAsync(CardHelper.GetLUISHeroCard(purchaseTicketResponse, LaLigaBL.PictureType.Ticket));
                                         break;
 
                                     case FindMatchIntent:
-                                        var findMatchResponse = LaLigaBL.FindMatch(response);
+                                        var findMatchResponse = laLigaBL.FindMatch(response);
                                         await turnContext.SendActivityAsync(CardHelper.GetLUISHeroCard(findMatchResponse.ResponseText, findMatchResponse.PictureType));
                                         break;
 
+                                    // Redirect to QnA if None intent is detected
                                     case NoneIntent:
                                     default:
-                                        var qnaResponse = await this.GetQnAResponse(activity.Text, turnContext);
+                                        var qnaResponse = await GetQnAResponse(activity.Text, turnContext);
                                         await turnContext.SendActivityAsync(qnaResponse);
                                         InQnaMaker = true;
                                         break;
@@ -192,44 +175,11 @@ namespace Microsoft.BotBuilderSamples
                         }
                     }
                 }
+                InQnaMaker = false; // Reset QnA Maker
             }
 
             await _conversationState.SaveChangesAsync(turnContext);
             await _userState.SaveChangesAsync(turnContext);
-        }
-
-        // Determine if an interruption has occurred before we dispatch to any active dialog.
-        private async Task<bool> IsTurnInterruptedAsync(DialogContext dc, string topIntent)
-        {
-            // See if there are any conversation interrupts we need to handle.
-            if (topIntent.Equals(CancelIntent))
-            {
-                if (dc.ActiveDialog != null)
-                {
-                    await dc.CancelAllDialogsAsync();
-                    await dc.Context.SendActivityAsync("Ok. I've canceled our last activity.");
-                }
-                else
-                {
-                    await dc.Context.SendActivityAsync("I don't have anything to cancel.");
-                }
-
-                return true;        // Handled the interrupt.
-            }
-
-            if (topIntent.Equals(HelpIntent))
-            {
-                await dc.Context.SendActivityAsync("Let me try to provide some help.");
-                await dc.Context.SendActivityAsync("I understand greetings, being asked for help, or being asked to cancel what I am doing.");
-                if (dc.ActiveDialog != null)
-                {
-                    await dc.RepromptDialogAsync();
-                }
-
-                return true;        // Handled the interrupt.
-            }
-
-            return false;           // Did not handle the interrupt.
         }
 
         // Create an attachment message response.

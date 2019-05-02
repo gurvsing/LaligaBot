@@ -9,55 +9,44 @@ using Microsoft.Bot.Builder.LanguageGeneration;
 
 namespace BasicBot
 {
-    public struct FindMatchResponse
+
+    public class LaLigaBL
     {
-        public string MatchDate { get; set; }
-
-        public string Home { get; set; }
-
-        public string Away { get; set; }
-
-        public string Team { get; set; }
-
-        public string ResponseText { get; set; }
-
-        public LaLigaBL.PictureType PictureType { get; set; }
-    }
-    public static class LaLigaBL
-    {
-        public static readonly int TicketPrice = 50;
-        public static Dictionary<string, string> matches = new Dictionary<string, string>();
-        public static Dictionary<string, string> stadiums = new Dictionary<string, string>() {
-            {"Barcelona" , "Camp Nou" }, {"Real Madrid", "Santiago Bernabeu" }, {"Ath Madrid", "Wanda Metropolitan"},
-            {"Betis", "Benito Villamarin"}, {"Leganes", "Butarque"}, {"Levante", "Ciutat de Valencia"}, {"Getafe", "Coliseum Alfonso Perez"},
-            {"Villareal", "Estadio de la Ceramica"}, {"Huesca", "El Alcoraz" }, {"Eibar", "Ipurua"}, {"Valladolid", "Jose Zorrilla"}, {"Alaves", "Mendizorrotta"},
-            {"Valencia", "Mestalla" }, {"Girona", "Montilivi"}, {"Sevilla", "Ramón Sánchez Pizjuán"}, {"Ath Bilbao", "San Mames"}, {"Celta", "Balaidos"},
-            {"Espanyol", "RCDE Stadium" }, {"Vallecano", "Vallecas"}, {"Sociedad", "Anoeta"}, {"Liverpool", "Anfield"}, {"Tottenham", "White Hart Lane"}, {"Ajax", "Johan Cruijff Arena"}
+        private static readonly int TicketPrice = 50; // Ticket price
+        private static Dictionary<string, string> stadiums = new Dictionary<string, string>() { // Team Stadiums
+            { "Barcelona" , "Camp Nou" }, { "Real Madrid", "Santiago Bernabeu" }, { "Ath Madrid", "Wanda Metropolitan" },
+            { "Betis", "Benito Villamarin" }, { "Leganes", "Butarque" }, { "Levante", "Ciutat de Valencia" }, { "Getafe", "Coliseum Alfonso Perez" },
+            { "Villareal", "Estadio de la Ceramica" }, { "Huesca", "El Alcoraz" }, { "Eibar", "Ipurua" }, { "Valladolid", "Jose Zorrilla" }, { "Alaves", "Mendizorrotta" },
+            { "Valencia", "Mestalla" }, { "Girona", "Montilivi" }, { "Sevilla", "Ramón Sánchez Pizjuán" }, { "Ath Bilbao", "San Mames" }, { "Celta", "Balaidos" },
+            { "Espanyol", "RCDE Stadium" }, { "Vallecano", "Vallecas" }, { "Sociedad", "Anoeta" }, { "Liverpool", "Anfield" }, {"Tottenham", "White Hart Lane"}, { "Ajax", "Johan Cruijff Arena" },
         };
-        public static List<MatchJSON> AllGames = JsonConvert.DeserializeObject<List<MatchJSON>>(File.ReadAllLines("LaLigaData.json")[0]);
-        public static List<MatchJSON> FutureGames = JsonConvert.DeserializeObject<List<MatchJSON>>(File.ReadAllLines("LaLigaRest.json")[0]);
-        public static List<MatchJSON> ChampionsLeagueGames = JsonConvert.DeserializeObject<List<MatchJSON>>(File.ReadAllLines("ChampionsLeagueGames.json")[0]);
-        public static readonly DateTime endDate = new DateTime(2019, 5, 15);
-        public static readonly DateTime startDate = new DateTime(2018, 7, 15);
-        public static HashSet<string> Teams;
-        public static string CoreferenceHome;
-        public static string CoreferenceAway;
-        public static bool IsChampionsLeague = false;
-        public static FindMatchResponse LastGameInMemory;
-        public static TemplateEngine lgEngine = TemplateEngine.FromFiles("LaLigaTemplates.lg");
+
+        private static List<MatchJSON> AllGames = JsonConvert.DeserializeObject<List<MatchJSON>>(File.ReadAllLines(@".\Resources\LaLigaData.json")[0]); // All La Liga games played
+        private static List<MatchJSON> FutureGames = JsonConvert.DeserializeObject<List<MatchJSON>>(File.ReadAllLines(@".\Resources\LaLigaRest.json")[0]); // All La Liga games left to be played
+        private static List<MatchJSON> ChampionsLeagueGames = JsonConvert.DeserializeObject<List<MatchJSON>>(File.ReadAllLines(@".\Resources\ChampionsLeagueGames.json")[0]); // All Champions League games left to be played
+
+        public static string CoreferenceTeam; // Last team discussed (home team if 2 teams discussed) to be saved in context for external entity 
+        public static bool IsChampionsLeague = false; // Bool to determine picture, La Liga or Champions League
+        public static FindMatchResponse LastGameInMemory; // Last discussed game in memory
+        public TemplateEngine lgEngine = TemplateEngine.FromFiles(@".\Resources\LaLigaTemplates.lg"); // Language Generation Engine
+
+        public LaLigaBL()
+        {
+        }
 
         public enum PictureType
         {
             ChampionsLeague,
             LaLiga,
-            Ticket
+            Ticket,
         }
-        public static FindMatchResponse FindMatch(LuisResponse luisResults, bool isMulti = false)
+
+        public FindMatchResponse FindMatch(LuisResponse luisResults, bool fromContext = false)
         {
-            if (isMulti)
+            // If requested to get last discussed game, return it
+            if (fromContext)
                 return LastGameInMemory;
-            MatchObject matchInfo;
-            string finalMatchDescription = "";
+
             var home = luisResults.Entities.ContainsKey("Home") ? luisResults.Entities["Home"] : null;
             var away = luisResults.Entities.ContainsKey("Away") ? luisResults.Entities["Away"] : null;
             var team = luisResults.Entities.ContainsKey("Team") ? luisResults.Entities["Team"] : null;
@@ -68,30 +57,35 @@ namespace BasicBot
             else if (home == null && away != null && team != null && away != team)
                 home = team;
 
-            matchInfo = GetMatchInfo(home, away, team, relative);
+            MatchJSON matchInfo = GetMatchInfo(home, away, team, relative);
 
             var findMatchResult = new FindMatchResponse()
             {
-                Home = home,
-                Away = away,
-                MatchDate = matchInfo.MatchDate,
+                Home = matchInfo.HomeTeam,
+                Away = matchInfo.AwayTeam,
+                MatchDate = matchInfo.Date,
                 ResponseText = matchInfo.MatchDescription,
                 Team = team,
-                PictureType = LaLigaBL.IsChampionsLeague ? PictureType.ChampionsLeague : PictureType.LaLiga
+                PictureType = IsChampionsLeague ? PictureType.ChampionsLeague : PictureType.LaLiga,
             };
-            LuisServiceV3.CoreferenceHome = team ?? home ?? away;
-            LaLigaBL.IsChampionsLeague = false;
-            LastGameInMemory = findMatchResult;
+
+            CoreferenceTeam = team ?? home ?? away; // Save last team in context
+            LastGameInMemory = findMatchResult; // Save last game found
+            IsChampionsLeague = false; // Reset Champions League flag
             return findMatchResult;
         }
 
-        public static string PurchaseTicket(LuisResponse luisResults, bool isMulti = false)
+        public string PurchaseTicket(LuisResponse luisResults)
         {
+            var home = luisResults.Entities.ContainsKey("Home") ? luisResults.Entities["Home"] : null;
+            var away = luisResults.Entities.ContainsKey("Away") ? luisResults.Entities["Away"] : null;
+            var team = luisResults.Entities.ContainsKey("Team") ? luisResults.Entities["Team"] : null;
+            bool areTeamsPresent = (home ?? away ?? team) == null; // Check if teams are present, if yes get new game from FindMatch, if not get last game saved in context
+
+            FindMatchResponse findMatchResponse = FindMatch(luisResults, areTeamsPresent);
             var finalResponse = string.Empty;
-            FindMatchResponse findMatchResponse = FindMatch(luisResults, isMulti);
-            var home = findMatchResponse.Home;
-            var away = findMatchResponse.Away;
-            var team = findMatchResponse.Team;
+            home = findMatchResponse.Home;
+            away = findMatchResponse.Away;
             var number = luisResults.Entities.ContainsKey("number") ? luisResults.Entities["number"] : null;
             var ticketNumber = 1;
             if (number != null)
@@ -102,108 +96,77 @@ namespace BasicBot
             if (home != null && away != null)
             {
                 finalResponse = lgEngine.EvaluateTemplate("PurchaseTicketTemplate", new { home = home, away = away, ticketNumber = ticketNumber, ticketString = ticketString, stadium = stadiums[home], date = findMatchResponse.MatchDate, price = ticketNumber * TicketPrice });
-                //finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the **{home}** vs **{away}** game at *{stadiums[home]}* taking place on **{findMatchResponse.MatchDate}**. The total price of the tickets is {ticketNumber * TicketPrice}. It will be deducted from your account balance.";
             }
-            //else if ((team != null && home == null && away == null) || (home != null && away == null) || (home == null && away != null))
-            //{
-            //    string finalDate = "";
-            //    var singleTeam = team ?? home ?? away;
-            //    finalResponse = $"You have chosen to purchase {ticketNumber} {ticketString} for the **{singleTeam}'s** next game at *{stadiums[singleTeam]}* taking place on **{findMatchResponse.MatchDate}**. The total price of the tickets is *{ticketNumber * TicketPrice}*. It will be deducted from your account balance.";
-            //};
+            else
+            {
+                finalResponse = "Sorry we could not find the game you were trying to purchase tickets for.";
+            }
 
             return finalResponse;
         }
 
-        public static MatchObject GetMatchInfo(string home, string away, string team, string relative = "Previous")
+        private MatchJSON GetMatchInfo(string home, string away, string team, string relative = "Previous")
         {
-            var matchObject = new MatchObject();
-            if(home != null && away != null && home != away)
+            var Game = new MatchJSON();
+
+            if (home != null && away != null && home != away) // If 2 teams are detected in the query
             {
-                var Game = AllGames.Where(match => match.HomeTeam == home && match.AwayTeam == away).SingleOrDefault();
+                // If game is found, return game info plus a description generated from language generation
+                Game = AllGames.Where(match => match.HomeTeam == home && match.AwayTeam == away).SingleOrDefault();
                 if (Game != null)
                 {
-                    matchObject = GetMatchObject(Game, home, away);
+                    var result = Game.FTR == "H" ? $"a home win for **{home}**" : Game.FTR == "A" ? $"an away win for **{away}**" : "a draw";
+                    Game.MatchDescription = lgEngine.EvaluateTemplate("FindMatchResult", new { home = home, away = away, date = Game.Date, stadium = stadiums[home], result = result, homeGoals = Game.FTHG, awayGoals = Game.FTAG, });
                 }
-                else
+                else // If game is not found, check future games
                 {
-                    if(IsChampionsLeague)
+                    if (IsChampionsLeague)
                         Game = ChampionsLeagueGames.Where(match => match.HomeTeam == home && match.AwayTeam == away).SingleOrDefault();
                     else
                         Game = FutureGames.Where(match => match.HomeTeam == home && match.AwayTeam == away).SingleOrDefault();
 
-                    if(Game == null)
+                    if (Game == null)
                     {
-                        matchObject.MatchDescription = "Sorry we cannot find the match you requested";
-                        return matchObject;
+                        Game.MatchDescription = "Sorry we cannot find the match you requested";
                     }
-                    matchObject.AwayTeam = away;
-                    matchObject.HomeTeam = home;
-                    matchObject.MatchDate = Game.Date;
-                    matchObject.MatchDescription = lgEngine.EvaluateTemplate("NextGameTemplate", new { team = home, awayOrHome = "at home against", opponent = away, date = matchObject.MatchDate, home = home, stadium = stadiums[home] });
-                };
-                return matchObject;
+
+                    Game.MatchDescription = lgEngine.EvaluateTemplate("NextGameTemplate", new { team = home, awayOrHome = "at home against", opponent = away, date = Game.Date, home = home, stadium = stadiums[home] });
+                }
+
             }
-            else
+            else // If one team is detected in the query
             {
                 var singleTeam = team ?? home ?? away;
-                if (relative == "Previous")
+                if (relative == "Previous") // If query is about team's last game, look for its last game
                 {
-                    var Game = AllGames.Where(match => match.AwayTeam == singleTeam || match.HomeTeam == singleTeam).Last();
-                    if (Game != null)
+                    Game = AllGames.Where(match => match.AwayTeam == singleTeam || match.HomeTeam == singleTeam).Last(); // Get the team's last game
+                    if (Game != null) // If team's last game is found
                     {
-                        matchObject = GetMatchObject(Game, Game.HomeTeam, Game.AwayTeam);
-                        return matchObject;
+                        var result = Game.FTR == "H" ? $"a home win for **{Game.HomeTeam}**" : Game.FTR == "A" ? $"an away win for **{Game.AwayTeam}**" : "a draw";
+                        Game.MatchDescription = lgEngine.EvaluateTemplate("FindMatchResult", new { home = Game.HomeTeam, away = Game.AwayTeam, date = Game.Date, stadium = stadiums[Game.HomeTeam], result = result, homeGoals = Game.FTHG, awayGoals = Game.FTAG, });
                     }
-                    else
+                    else // If team's last game is not found
                     {
-                        matchObject.MatchDescription = "Sorry we cannot find the match you requested";
-                        return matchObject;
+                        Game.MatchDescription = "Sorry we cannot find the match you requested";
                     }
                 }
-                else
+                else // Find team's next game
                 {
-                    MatchJSON Game;
-
-                    if(IsChampionsLeague)
+                    if (IsChampionsLeague)
                         Game = ChampionsLeagueGames.Where(match => match.HomeTeam == singleTeam || match.AwayTeam == singleTeam).FirstOrDefault();
                     else
                         Game = FutureGames.Where(match => match.HomeTeam == singleTeam || match.AwayTeam == singleTeam).FirstOrDefault();
 
-                    matchObject.HomeTeam = Game.HomeTeam;
-                    matchObject.AwayTeam = Game.AwayTeam;
-                    var awayOrHome = singleTeam == matchObject.HomeTeam ? "at home" : "away";
-                    var otherTeam = singleTeam == matchObject.HomeTeam ? Game.AwayTeam : Game.HomeTeam;
-                    matchObject.MatchDescription = lgEngine.EvaluateTemplate("NextGameTemplate", new { team = singleTeam, awayOrHome = awayOrHome, opponent = otherTeam, date = Game.Date, home = Game.HomeTeam, stadium = stadiums[Game.HomeTeam] });
-                    //matchObject.MatchDescription = $"**{singleTeam}'s** next game will be {awayOrHome} **{otherTeam}** on **{Game.Date}**.\n The game will played at the {Game.HomeTeam}'s stadium *{stadiums[Game.HomeTeam]}*.";
+                    var awayOrHome = singleTeam == Game.HomeTeam ? "at home" : "away";
+                    var otherTeam = singleTeam == Game.HomeTeam ? Game.AwayTeam : Game.HomeTeam;
+                    Game.MatchDescription = lgEngine.EvaluateTemplate("NextGameTemplate", new { team = singleTeam, awayOrHome = awayOrHome, opponent = otherTeam, date = Game.Date, home = Game.HomeTeam, stadium = stadiums[Game.HomeTeam] });
                 }
-
             }
-            return matchObject;
+
+            return Game;
         }
 
-        public static MatchObject GetMatchObject(MatchJSON Game, string home, string away)
-        {
-            var matchObject = new MatchObject();
-            matchObject.AwayTeam = away;
-            matchObject.HomeTeam = home;
-            matchObject.MatchDate = Game.Date;
-            matchObject.WinningTeam = Game.FTR == "H" ? home : Game.FTR == "A" ? away : null;
-            var result = Game.FTR == "H" ? $"a home win for **{home}**" : Game.FTR == "A" ? $"an away win for **{away}**" : "a draw";
-            matchObject.MatchResult = $"{Game.FTHG} - {Game.FTAG}";
-            matchObject.MatchDescription = lgEngine.EvaluateTemplate("FindMatchResult", new { home = home, away = away, date = Game.Date, stadium = stadiums[home], result = result, homeGoals = Game.FTHG, awayGoals = Game.FTAG, });
-            //matchObject.MatchDescription = $"**{home}** played at Home against **{away}** on **{Game.Date}** at *{stadiums[home]}*.\nThe game ended with {result}. \n The score was **{home}** *{Game.FTHG} - {Game.FTAG}* **{away}**";
-            return matchObject;
-        }
-
-        public class FutureMatchJson
-        {
-            public string HomeTeam { get; set; }
-
-            public string AwayTeam { get; set; }
-
-            public string Date { get; set; }
-        }
-
+        // Class for matches in JSON
         public class MatchJSON
         {
             public string HomeTeam { get; set; }
@@ -245,17 +208,24 @@ namespace BasicBot
             public int HTHG { get; set; }
 
             public int HY { get; set; }
+
+            public string MatchDescription { get; set; }
         }
 
-        public class MatchObject
+        // Find Match Intent Response
+        public class FindMatchResponse
         {
-            public string WinningTeam { get; set; }
             public string MatchDate { get; set; }
-            public string HomeTeam { get; set; }
-            public string AwayTeam { get; set; }
-            public string MatchResult { get; set; }
-            public string MatchDescription { get; set; }
 
+            public string Home { get; set; }
+
+            public string Away { get; set; }
+
+            public string Team { get; set; }
+
+            public string ResponseText { get; set; }
+
+            public LaLigaBL.PictureType PictureType { get; set; }
         }
     }
 }

@@ -16,14 +16,22 @@ namespace BasicBot
 
     public class LuisServiceV3
     {
+        public string url { get; set; }
 
-        public static HashSet<string> Coreferences = new HashSet<string>() { "they", "we", "them", "their" };
+        public string subscriptionKey { get; set; }
 
-        public static string url = "https://westus.api.cognitive.microsoft.com/luis/v3.0-preview/apps/e011cee6-32a2-43df-bfcc-1979d87fd506/slots/PRODUCTION/predict?log=true&subscription-key=014fee3605e84fdc9d772b8092a7e7f4&multiple-intents=true";
+        public string appId { get; set; }
 
+        public string slot { get; set; }
         public LuisServiceV3()
         {
+            subscriptionKey = "014fee3605e84fdc9d772b8092a7e7f4";
+            appId = "e011cee6-32a2-43df-bfcc-1979d87fd506";
+            slot = "PRODUCTION";
+            url = $"https://westus.api.cognitive.microsoft.com/luis/v3.0-preview/apps/{appId}/slots/{slot}/predict?subscription-key={subscriptionKey}&multiple-intents=true&log=true";
         }
+
+        public static HashSet<string> Coreferences = new HashSet<string>() { "they", "we", "them", "their" };
 
         // Call endpoint to get prediction
         public async Task<List<LuisResponse>> PredictLUIS(string query, ITurnContext turnContext)

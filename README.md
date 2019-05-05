@@ -1,23 +1,9 @@
-# Basic Bot template
-This bot has been created using [Microsoft Bot Framework](https://dev.botframework.com),
-- Use [LUIS](https://luis.ai) to implement core AI capabilities
-- Implement a multi-turn conversation using Dialogs
-- Handle user interruptions for such things as Help or Cancel
-- Prompt for and validate requests for information from the user
+# LUIS_QnA_LaLiga
+Welcome to the La Liga Bot Demo!
 
-# Prerequisite to run this bot locally
-- Download the bot code from the Build blade in the Azure Portal
-- Update the `appsettings.json` file in the root of the bot project with the botFilePath and botFileSecret 
-- You can find the botFilePath and botFileSecret in the Azure App Service application settings.
+To run the transcript directly, download Bot Framework Emulator and open the Transcript.transcript file in the Emulator. 
 
-Your appsettings.json file should look like this
-```bash
-{
-    "botFilePath": "<copy value from App settings>",
-    "botFileSecret": "<copy value from App settings>"
-}
-```
-
+To run the demo locally, follow the steps below.
 
 ## Run in Visual Studio
 - Open the .sln file with Visual Studio.
@@ -33,28 +19,15 @@ their bots on localhost or running remotely through a tunnel.
 ### Connect to bot using Bot Framework Emulator
 - Launch the Bot Framework Emulator
 - File -> Open bot and navigate to the bot project folder
-- Select `<your-bot-name>.bot` file
+- Select `LaLiga.bot` file
 
-# Deploy this bot to Azure
-## Publish from Visual Studio
-- Open the .PublishSettings file you find in the PostDeployScripts folder
-- Copy the userPWD value
-- Right click on the Project and click on "Publish..."
-- Paste the password you just copied and publish
+# Basic Bot template
+This bot has been created using [Microsoft Bot Framework](https://dev.botframework.com),
+- Use [LUIS](https://luis.ai) to implement core AI capabilities
+- Implement a multi-turn conversation using Dialogs
+- Handle user interruptions for such things as Help or Cancel
+- Prompt for and validate requests for information from the user
 
-## Publish using the CLI tools
-You can use the [MSBot](https://github.com/microsoft/botbuilder-tools) Bot Builder CLI tool to clone and configure any services this sample depends on. 
-To install all Bot Builder tools - 
-
-Ensure you have [Node.js](https://nodejs.org/) version 8.5 or higher
-
-```bash
-npm i -g msbot chatdown ludown qnamaker luis-apis botdispatch luisgen
-```
-To clone this bot, run
-```
-msbot clone services -f deploymentScripts/msbotClone -n <BOT-NAME> -l <Azure-location> --subscriptionId <Azure-subscription-id>
-```
 # Further reading
 - [Bot Framework Documentation](https://docs.botframework.com)
 - [Bot basics](https://docs.microsoft.com/en-us/azure/bot-service/bot-builder-basics?view=azure-bot-service-4.0)
@@ -65,5 +38,3 @@ msbot clone services -f deploymentScripts/msbotClone -n <BOT-NAME> -l <Azure-loc
 - [Channels and Bot Connector Service](https://docs.microsoft.com/en-us/azure/bot-service/bot-concepts?view=azure-bot-service-4.0)
 - [QnA Maker](https://qnamaker.ai)
 
-# LUIS_QnA_LaLiga
-# LUIS_QnA_LaLiga

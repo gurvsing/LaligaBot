@@ -1,0 +1,34 @@
+{
+    "name": "luis-csharp-bot-test-hazem",
+    "description": "",
+  "services": [
+    {
+      "type": "endpoint",
+      "appId": "",
+      "appPassword": "",
+      "endpoint": "http://localhost:3978/api/messages",
+      "name": "development",
+      "id": "3"
+    },
+    {
+      "type": "luis",
+      "appId": "13da9e60-fe37-4bfc-bb05-fef9eedd676f",
+      "authoringKey": "014fee3605e84fdc9d772b8092a7e7f4",
+      "version": "0.1",
+      "region": "westus",
+      "name": "BasicBotLuisApplication",
+      "id": "5"
+    },
+    {
+      "type": "qna",
+      "endpointKey": "d3e7780b-fa03-4366-ab55-eaed70e97de4",
+      "hostname": "https://rokulka-test.azurewebsites.net/qnamaker",
+      "kbId": "c25afea7-0ca0-44e7-a630-cce73b121087",
+      "subscriptionKey": "111",
+      "id": "118",
+      "name": "QnAMakerPrompts"
+    }
+  ],
+    "padlock": "",
+    "version": "2.0"
+}

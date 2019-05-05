@@ -18,7 +18,7 @@ namespace BasicBot
             { "Betis", "Benito Villamarin" }, { "Leganes", "Butarque" }, { "Levante", "Ciutat de Valencia" }, { "Getafe", "Coliseum Alfonso Perez" },
             { "Villareal", "Estadio de la Ceramica" }, { "Huesca", "El Alcoraz" }, { "Eibar", "Ipurua" }, { "Valladolid", "Jose Zorrilla" }, { "Alaves", "Mendizorrotta" },
             { "Valencia", "Mestalla" }, { "Girona", "Montilivi" }, { "Sevilla", "Ramón Sánchez Pizjuán" }, { "Ath Bilbao", "San Mames" }, { "Celta", "Balaidos" },
-            { "Espanyol", "RCDE Stadium" }, { "Vallecano", "Vallecas" }, { "Sociedad", "Anoeta" }, { "Liverpool", "Anfield" }, {"Tottenham", "White Hart Lane"}, { "Ajax", "Johan Cruijff Arena" },
+            { "Espanol", "RCDE Stadium" }, { "Vallecano", "Vallecas" }, { "Sociedad", "Anoeta" }, { "Liverpool", "Anfield" }, {"Tottenham", "White Hart Lane"}, { "Ajax", "Johan Cruijff Arena" },
         };
 
         private static List<MatchJSON> AllGames = JsonConvert.DeserializeObject<List<MatchJSON>>(File.ReadAllLines(@".\Resources\LaLigaData.json")[0]); // All La Liga games played

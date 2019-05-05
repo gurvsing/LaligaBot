@@ -1,6 +1,9 @@
 # LUIS_QnA_LaLiga
 Welcome to the La Liga Bot Demo!
-To run the demo locally:
+
+To run the transcript directly, download Bot Framework Emulator and open the Transcript.transcript file in the Emulator. 
+
+To run the demo locally, follow the steps below.
 
 ## Run in Visual Studio
 - Open the .sln file with Visual Studio.

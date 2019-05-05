@@ -19,7 +19,7 @@ their bots on localhost or running remotely through a tunnel.
 ### Connect to bot using Bot Framework Emulator
 - Launch the Bot Framework Emulator
 - File -> Open bot and navigate to the bot project folder
-- Select `<your-bot-name>.bot` file
+- Select `LaLiga.bot` file
 
 # Basic Bot template
 This bot has been created using [Microsoft Bot Framework](https://dev.botframework.com),

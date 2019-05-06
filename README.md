@@ -5,6 +5,31 @@ To run the transcript directly, download Bot Framework Emulator and open the Tra
 
 To run the demo locally, follow the steps below.
 
+## Prerequisites
+
+#### Setting up QnA Maker
+- Follow instructions [here](https://docs.microsoft.com/en-us/azure/cognitive-services/qnamaker/how-to/set-up-qnamaker-service-azure)
+to create a QnA Maker service.
+- Follow instructions [here](https://docs.microsoft.com/en-us/azure/cognitive-services/qnamaker/quickstarts/create-publish-knowledge-base) to
+import and publish the [LaligaQnAMaker.tsv](https://qnamakerppestorage.blob.core.windows.net/laliga-resource/LaligaQnAMaker.tsv) to your newly created QnA Maker service.
+- Update [LaLiga.bot](./Laliga.bot) with your kbid (KnowledgeBase Id) and endpointKey in the "qna" services section. You can find this
+information under "Settings" tab for your QnA Maker Knowledge Base at [QnAMaker.ai](https://www.qnamaker.ai)
+- (Optional) Follow instructions [here](https://github.com/Microsoft/botbuilder-tools/tree/master/packages/QnAMaker) to set up the
+QnA Maker CLI to deploy the model.
+
+#### Setting up LUIS
+- Navigate to [LUIS Portal](http://luis.ai)
+- Click the `Sign in` button
+- Click on `My apps` button
+- Click on `Import new app`
+- Click on the `Choose File` and select [LaLiagaLUIS.json](https://qnamakerppestorage.blob.core.windows.net/laliga-resource/LaligaLUIS.json).
+- Update [LaLiga.bot](LaLiga.bot) file with your AppId, SubscriptionKey, Region and Version.
+    You can find this information under "Manage" tab for your LUIS application at [LUIS portal](https://www.luis.ai).
+    - The `AppID` can be found in "Application Information"
+    - The `SubscriptionKey` can be found in "Keys and Endpoints", under the `Key 1` column
+    - The `region` can be found in "Keys and Endpoints", under the `Region` column
+- In [Luis Service](./Helpers/LuisService.cs), update SubscriptionKey(line: 28) and AppID(line: 29).    
+
 ## Run in Visual Studio
 - Open the .sln file with Visual Studio.
 - Press F5.

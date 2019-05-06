@@ -25,8 +25,8 @@ namespace BasicBot
         public string slot { get; set; }
         public LuisServiceV3()
         {
-            subscriptionKey = "014fee3605e84fdc9d772b8092a7e7f4";
-            appId = "e011cee6-32a2-43df-bfcc-1979d87fd506";
+            subscriptionKey = "Enter LUIS subscription key";
+            appId = "Enter LUIS AppId";
             slot = "PRODUCTION";
             url = $"https://westus.api.cognitive.microsoft.com/luis/v3.0-preview/apps/{appId}/slots/{slot}/predict?subscription-key={subscriptionKey}&multiple-intents=true&log=true";
         }
